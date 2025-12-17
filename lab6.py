@@ -21,17 +21,19 @@ def logged(exception_type, mode="console"):
                 logger = logging.getLogger(func.__name__)
                 logger.setLevel(logging.ERROR)
 
-                if mode == "file":
-                    handler = logging.FileHandler("log.txt", encoding="utf-8")
-                else:
-                    handler = logging.StreamHandler()
+                
+                if not logger.handlers:
+                    if mode == "file":
+                        handler = logging.FileHandler("log.txt", encoding="utf-8")
+                    else:
+                        handler = logging.StreamHandler()
 
-                formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
-                handler.setFormatter(formatter)
-                logger.addHandler(handler)
+                    formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+                    handler.setFormatter(formatter)
+                    logger.addHandler(handler)
 
                 logger.error(f"{exception_type.__name__}: {e}")
-                raise
+                raise exception_type(str(e))  
         return wrapper
     return decorator
 
@@ -51,24 +53,24 @@ class TextFileHandler:
         try:
             with open(self.filepath, "r", encoding="utf-8") as f:
                 return f.read()
-        except Exception:
-            raise FileCorrupted("Помилка читання файлу")
+        except Exception as e:
+            raise FileCorrupted(f"Помилка читання файлу: {e}")
 
     @logged(FileCorrupted, mode="file")
     def write(self, content):
         try:
             with open(self.filepath, "w", encoding="utf-8") as f:
                 f.write(content)
-        except Exception:
-            raise FileCorrupted("Помилка запису у файл")
+        except Exception as e:
+            raise FileCorrupted(f"Помилка запису у файл: {e}")
 
     @logged(FileCorrupted, mode="file")
     def append(self, content):
         try:
             with open(self.filepath, "a", encoding="utf-8") as f:
                 f.write(content)
-        except Exception:
-            raise FileCorrupted("Помилка дописування у файл")
+        except Exception as e:
+            raise FileCorrupted(f"Помилка дописування у файл: {e}")
 
     @logged(DuplicateTextError, mode="console")
     def append_unique(self, content):
@@ -79,7 +81,6 @@ class TextFileHandler:
 
     @logged(FileCorrupted, mode="file")
     def read_and_save(self):
-
         content = self.read()
         self.append("\nlol\n")
         self.append(content)
